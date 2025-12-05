@@ -236,16 +236,19 @@ export class GraphTallyCollector {
         })
         this.logger.trace(`[TAPv2] RAW DATA`, { ravs, allocations })
 
+        // Create a Map for O(1) allocation lookups instead of O(n) Array.find()
+        // This optimizes performance from O(n²) to O(n) for large datasets
+        const allocationMap = new Map(
+          allocations.map(allocation => [allocation.id.toLowerCase(), allocation])
+        )
+
         const pendingRAVsToProcess = ravs
           .map((rav) => {
             const signedRav = rav.getSignedRAV()
+            const allocationId = toAddress(collectionIdToAllocationId(signedRav.rav.collectionId)).toLowerCase()
             return {
               rav: signedRav,
-              allocation: allocations.find(
-                (a) =>
-                  a.id ===
-                  toAddress(collectionIdToAllocationId(signedRav.rav.collectionId)),
-              ),
+              allocation: allocationMap.get(allocationId), // O(1) lookup instead of O(n) find
               payer: rav.payer,
             }
           })
