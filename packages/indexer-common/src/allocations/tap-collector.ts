@@ -216,14 +216,20 @@ export class TapCollector {
           ravs: ravs.length,
           allocations: allocations.length,
         })
+        
+        // Create a Map for O(1) allocation lookups instead of O(n) Array.find()
+        // This optimizes performance from O(n²) to O(n) for large datasets
+        const allocationMap = new Map(
+          allocations.map(allocation => [allocation.id.toLowerCase(), allocation])
+        )
+        
         return ravs
           .map((rav) => {
             const signedRav = rav.getSignedRAV()
+            const allocationId = toAddress(signedRav.rav.allocationId.toString()).toLowerCase()
             return {
               rav: signedRav,
-              allocation: allocations.find(
-                (a) => a.id === toAddress(signedRav.rav.allocationId.toString()),
-              ),
+              allocation: allocationMap.get(allocationId), // O(1) lookup instead of O(n) find
               sender: rav.senderAddress,
             }
           })
